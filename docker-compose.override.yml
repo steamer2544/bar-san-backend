@@ -1,0 +1,115 @@
+# Development Override Configuration
+# This file is automatically loaded in development environment
+version: '3.8'
+
+services:
+  # Backend Development Configuration
+  backend:
+    environment:
+      # Override production environment variables
+      NODE_ENV: "development"
+      FRONTEND_URL: "http://localhost:3000"
+      GOOGLE_REDIRECT_URI: "http://localhost:3001/api/auth/google/callback"
+      
+      # Development-specific variables
+      DEBUG: "true"
+      LOG_LEVEL: "debug"
+      HOT_RELOAD: "true"
+      
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+      
+    # Override command for development
+    command: bun run dev
+    
+    # Add development ports
+    ports:
+      - "3001:3001"
+      - "9229:9229"  # Debug port
+      
+    # Development-specific labels
+    labels:
+      - "traefik.enable=false"  # Disable traefik in dev
+
+  # PostgreSQL Development Configuration
+  postgres:
+    environment:
+      # Use simpler password for development
+      POSTGRES_PASSWORD: "dev_password"
+      POSTGRES_DB: "barsan_dev_db"
+      
+    ports:
+      # Expose port for local database access
+      - "5432:5432"
+      
+    volumes:
+      # Use named volume instead of bind mount
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./dev-scripts:/docker-entrypoint-initdb.d
+
+  # Redis Development Configuration  
+  redis:
+    ports:
+      # Expose port for local Redis access
+      - "6379:6379"
+      
+    # Remove password for development
+    command: redis-server --appendonly yes
+
+  # Remove Nginx in development (use direct backend access)
+  nginx:
+    profiles:
+      - production
+      - staging
+
+  # Remove PgAdmin in development (use local tools)
+  pgadmin:
+    profiles:
+      - production
+
+  # Add Development-only Services
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: barsan_mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - barsan_network
+    labels:
+      - "dev-service=true"
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: barsan_redis_commander
+    environment:
+      REDIS_HOSTS: "local:redis:6379"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - barsan_network
+    labels:
+      - "dev-service=true"
+
+  # Database GUI for development
+  adminer:
+    image: adminer:latest
+    container_name: barsan_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - barsan_network
+    labels:
+      - "dev-service=true"
+
+# Development-specific volumes
+volumes:
+  postgres_dev_data:
+    driver: local

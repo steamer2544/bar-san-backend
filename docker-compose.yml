@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Flask Backend
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: barsan_flask_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Flask Configuration
+      SECRET_KEY: "barsan_flask_secret_key_2024_production"
+      JWT_SECRET_KEY: "barsan_jwt_secret_key_2024_production"
+      FLASK_ENV: "production"
+      PORT: 5000
+      
+      # Database (SQLite file will be stored in volume)
+      DATABASE_URL: "sqlite:///data/barsan.db"
+      
+      # Frontend URL
+      FRONTEND_URL: "http://localhost:3000"
+      
+      # Email Configuration
+      SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASS: "${SMTP_PASS}"
+      EMAIL_FROM: "${EMAIL_FROM:-noreply@barsan.cafe}"
+      
+      # Admin Configuration
+      ADMIN_DEFAULT_PASSWORD: "BarSan2024Admin!"
+      SUPER_ADMIN_EMAIL: "admin@barsan.cafe"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - barsan_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: barsan_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - barsan_network
+
+volumes:
+  barsan_data:
+    driver: local
+
+networks:
+  barsan_network:
+    driver: bridge

@@ -1,0 +1,108 @@
+# Production Override Configuration
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+version: '3.8'
+
+services:
+  backend:
+    # Production-specific environment
+    environment:
+      NODE_ENV: "production"
+      LOG_LEVEL: "warn"
+      
+    # Remove development volumes
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      
+    # Production command
+    command: bun run start
+    
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Production restart policy
+    restart: unless-stopped
+    
+    # Production health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    # Production database configuration
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "barsan_production_db"
+      
+    # Remove exposed ports for security
+    ports: []
+    
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    
+    # Production backup volume
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./backups:/backups
+
+  redis:
+    # Remove exposed ports for security
+    ports: []
+    
+    # Production Redis configuration
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+    
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # Enable Nginx in production
+  nginx:
+    profiles: []  # Remove profile restriction
+    
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+
+  # Enable PgAdmin in production (optional)
+  pgadmin:
+    profiles: []  # Remove profile restriction
+    
+    # Production configuration
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_EMAIL}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_PASSWORD}"
+      PGADMIN_CONFIG_SERVER_MODE: 'True'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'True'
+
+# Production-specific volumes
+volumes:
+  postgres_prod_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/barsan/postgres

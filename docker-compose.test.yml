@@ -1,0 +1,41 @@
+# Testing Override Configuration
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      NODE_ENV: "test"
+      DATABASE_URL: "postgresql://test_user:test_pass@postgres_test:5432/barsan_test_db"
+      JWT_SECRET: "test_jwt_secret"
+      
+    command: bun test
+    
+    depends_on:
+      - postgres_test
+
+  # Separate test database
+  postgres_test:
+    image: postgres:15-alpine
+    container_name: barsan_postgres_test
+    environment:
+      POSTGRES_DB: barsan_test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass
+    tmpfs:
+      - /var/lib/postgresql/data  # Use tmpfs for faster tests
+    networks:
+      - barsan_network
+
+  # Remove unnecessary services for testing
+  redis:
+    profiles:
+      - skip
+      
+  nginx:
+    profiles:
+      - skip
+      
+  pgadmin:
+    profiles:
+      - skip
