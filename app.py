@@ -124,6 +124,7 @@ def seed_data():
                 is_active=True
             )
             db.session.add(barsan)
+            print("Initial data barsan successfully")
 
         if not Cafe.query.filter_by(name='NOIR').first():
             noir = Cafe(
@@ -136,6 +137,7 @@ def seed_data():
                 is_active=True
             )
             db.session.add(noir)
+            print("Initial data noir successfully")
 
         db.session.commit()
 
@@ -151,6 +153,7 @@ def seed_data():
             )
             db.session.add(zone_a)
             db.session.commit()
+            print("Initial data zones and tables successfully")
 
             # Add tables to Zone A
             for i in range(1, 11):
@@ -190,6 +193,7 @@ def seed_data():
                 })
             )
             db.session.add(admin_role)
+            print("Initial data admin roles successfully")
 
         db.session.commit()
 
@@ -213,6 +217,7 @@ def seed_data():
                 cafe_id=barsan_cafe.id
             )
             db.session.add(admin_role_assignment)
+            print("Initial data admin user successfully")
 
         db.session.commit()
         print("Initial data seeded successfully")

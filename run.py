@@ -15,3 +15,5 @@ if __name__ == '__main__':
     print(f"Debug mode: {debug}")
 
     app.run(debug=debug, host=host, port=port)
+
+# need seed to fun seperate to prevent that it will ride it self
