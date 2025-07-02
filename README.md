@@ -4,44 +4,63 @@ A Flask-based REST API for the BarSan table reservation system using SQLAlchemy 
 
 ## 🚀 Features
 
-- **Unified Authentication**: Single login endpoint for both users and admins
-- **SQLite WAL Mode**: Write-Ahead Logging for concurrent access without blocking
-- **JWT Authentication**: Secure token-based authentication
-- **Reservation System**: Complete table reservation management
-- **Admin Dashboard**: Administrative interface for managing reservations
-- **CORS Support**: Cross-origin resource sharing for frontend integration
-- **Docker Ready**: Containerized deployment support
-- **Auto Database Setup**: Automatic database creation and seeding
+  - **Unified Authentication**: Single login endpoint for both users and admins.
+  - **SQLite WAL Mode**: Write-Ahead Logging for high-concurrency access without blocking.
+  - **JWT Authentication**: Secure, cookie-based token authentication.
+  - **Reservation System**: Complete reservation management, including temporary holds.
+  - **Admin Dashboard**: Interface for managing reservations and cafe settings.
+  - **CORS Support**: Ready for frontend integration.
+  - **Docker Ready**: Fully containerized for easy deployment.
+  - **Auto Database Setup**: Automatic database creation and data seeding on first run.
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Flask (Python)
-- **Database**: SQLite with WAL mode
-- **ORM**: SQLAlchemy
-- **Authentication**: Flask-JWT-Extended
-- **CORS**: Flask-CORS
-- **Password Hashing**: Werkzeug
-- **Environment**: python-dotenv
+  - **Framework**: Flask (Python)
+  - **ORM**: SQLAlchemy
+  - **Database**: SQLite with WAL mode
+  - **Authentication**: Flask-JWT-Extended
+  - **Password Hashing**: Werkzeug
+  - **Deployment**: Gunicorn, Docker
+  - **Environment**: python-dotenv
 
-## 📋 Prerequisites
+## 📁 Project Structure
 
-- Python 3.8+
-- pip (Python package manager)
-- Virtual environment (recommended)
+```
+backend/
+├── app.py              # Main Flask application factory and blueprint setup
+├── models.py           # SQLAlchemy database models
+├── auth.py             # Authentication routes
+├── reservations.py     # Reservation management routes
+├── cafes.py            # Cafe and availability routes
+├── admin.py            # Admin management routes
+├── utils.py            # Utility functions
+├── run.py              # Entry point for development server (python run.py)
+├── requirements.txt    # Python dependencies
+├── Dockerfile          # Docker configuration
+├── docker-compose.yml  # Docker Compose setup
+├── .env.example        # Environment variable template
+└── README.md           # This file
+```
 
-## 🔧 Quick Start
+-----
 
-### 1. Setup Environment
+## 🚀 Getting Started (Local Development)
 
-\`\`\`bash
+### Prerequisites
+
+  - Python 3.8+
+  - pip (Python package manager)
+  - A virtual environment tool (like `venv`)
+
+### 1\. Setup Environment
+
+```bash
 # Clone the repository
 git clone <repository-url>
 cd backend
 
-# Create virtual environment
+# Create and activate a virtual environment
 python -m venv venv
-
-# Activate virtual environment
 # On Windows:
 venv\Scripts\activate
 # On macOS/Linux:
@@ -49,232 +68,205 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-\`\`\`
+```
 
-### 2. Configure Environment
+### 2\. Configure Environment Variables
 
-\`\`\`bash
-# Copy environment template
+```bash
+# Create a .env file from the template
 cp .env.example .env
+```
 
-# Edit .env file with your configuration
-# At minimum, change SECRET_KEY and JWT_SECRET_KEY
-\`\`\`
+Now, open the `.env` file and edit the variables. At a minimum, **you must change `SECRET_KEY` and `JWT_SECRET_KEY` to new, random, and secure values.**
 
-### 3. Run the Application
+> ⚠️ **Security Warning:** The `.env` file contains sensitive credentials. Ensure it is listed in your `.gitignore` and **never** commit it to version control.
 
-\`\`\`bash
-# Start the development server
+### 3\. Run the Development Server
+
+```bash
+# Start the application
 python run.py
-\`\`\`
+```
 
-The API will be available at `http://localhost:5000`
+The API will now be available at `http://localhost:5000`.
 
-## 🌐 API Endpoints
+> ⚠️ This command starts a **development server**. It is perfect for local testing but is **not suitable for production use**. For production, please follow the deployment instructions below.
 
-### Authentication (Unified)
-- `POST /auth/login` - Login for both users and admins
-- `POST /auth/register` - User registration
-- `GET /auth/me` - Get current user/admin info
-- `POST /auth/logout` - Logout (clears auth cookie)
+-----
 
-### Reservations
-- `POST /reservations/temp` - Create temporary reservation (15-min hold)
-- `POST /reservations` - Create confirmed reservation
-- `GET /reservations/my` - Get user's reservations (requires auth)
-- `GET /reservations/<number>` - Get reservation details
-- `DELETE /reservations/<number>` - Cancel reservation
+## 🐳 Deployment (Production)
 
-### Cafes
-- `GET /cafes` - Get all active cafes
-- `GET /cafes/<id>` - Get cafe details
-- `GET /cafes/<id>/availability` - Get available time slots
-- `GET /cafes/<id>/zones/<zone_id>/tables` - Get tables in zone
+### 1\. Production Configuration
 
-### Admin (requires admin auth)
-- `GET /admin/dashboard/<cafe_id>` - Get dashboard statistics
-- `GET /admin/reservations/<cafe_id>` - Get all cafe reservations
-- `PUT /admin/reservations/<id>` - Update reservation status
-- `GET /admin/tables/<cafe_id>` - Get cafe table management
+For production, ensure your `.env` file is configured correctly:
 
-### System
-- `GET /health` - Health check endpoint
+  - `SECRET_KEY` and `JWT_SECRET_KEY` must be set to strong, unique values.
+  - `ADMIN_DEFAULT_PASSWORD` should be changed from `admin123`.
+  - `FRONTEND_URL` should point to your live frontend application's URL.
 
-## 🔐 Authentication System
+### 2\. Option A: Docker & Docker Compose (Recommended)
 
-### Unified Login
-The system uses a single login endpoint that automatically detects whether credentials belong to a user or admin:
+Using Docker is the easiest way to deploy the application.
 
-\`\`\`javascript
-// Login request (works for both users and admins)
-const response = await fetch('/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include', // Important for cookies
-  body: JSON.stringify({
-    email: 'user@example.com', // or username for admin
-    password: 'password123'
-  })
-});
+```bash
+# Build and run all services in the background
+docker-compose up --build -d
 
-const data = await response.json();
-// Response includes:
-// - type: 'user' or 'admin'
-// - user/admin: user or admin object
-// - message: success message
-\`\`\`
-
-### Default Admin Account
-- **Username**: `admin`
-- **Email**: `admin@barsan.cafe`
-- **Password**: `admin123` (change in production!)
-
-## 🗄️ Database Schema
-
-### SQLite WAL Mode Benefits
-- **Concurrent Reads**: Multiple processes can read simultaneously
-- **Non-blocking Reads**: Reads don't block writes and vice versa
-- **Better Performance**: Faster writes and better crash recovery
-- **ACID Compliance**: Maintains database integrity
-
-### Main Models
-- **User**: Customer accounts with email authentication
-- **Admin**: Administrative users with username/email login
-- **Cafe**: Restaurant/bar information
-- **Zone**: Seating areas within cafes
-- **Table**: Individual tables with capacity and status
-- **Reservation**: Confirmed table reservations
-- **TemporaryReservation**: 15-minute reservation holds
-- **Role**: Admin roles and permissions
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `SECRET_KEY` | Flask secret key | - | ✅ |
-| `JWT_SECRET_KEY` | JWT signing key | - | ✅ |
-| `DATABASE_URL` | SQLite database path | `sqlite:///barsan.db` | ❌ |
-| `PORT` | Server port | `5000` | ❌ |
-| `HOST` | Server host | `0.0.0.0` | ❌ |
-| `FRONTEND_URL` | Frontend URL for CORS | `http://localhost:3000` | ❌ |
-| `ADMIN_DEFAULT_PASSWORD` | Default admin password | `admin123` | ❌ |
-| `SQLITE_WAL_MODE` | Enable WAL mode | `true` | ❌ |
-
-### SQLite Optimization
-The application automatically configures SQLite for optimal performance:
-- WAL mode for concurrent access
-- Increased cache size
-- Memory-based temporary storage
-- Foreign key constraints enabled
-
-## 🐳 Docker Deployment
-
-### Using Docker Compose
-\`\`\`bash
-# Build and run
-docker-compose up -d
-
-# View logs
+# View application logs
 docker-compose logs -f
 
-# Stop services
+# Stop and remove containers
 docker-compose down
-\`\`\`
+```
 
-### Manual Docker Build
-\`\`\`bash
-# Build image
-docker build -t barsan-backend .
+### 3\. Option B: Manual with Gunicorn & Nginx
 
-# Run container
-docker run -p 5000:5000 -v $(pwd)/data:/app/data barsan-backend
-\`\`\`
+For a traditional deployment on a virtual server.
 
-## 🧪 Testing
+#### Step 1: Install Gunicorn
 
-### Manual API Testing
+If you followed the development setup, Gunicorn should already be installed from `requirements.txt`. If not:
 
-\`\`\`bash
-# Health check
-curl http://localhost:5000/health
-
-# User registration
-curl -X POST http://localhost:5000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123","fullName":"Test User","phone":"1234567890"}'
-
-# User login
-curl -X POST http://localhost:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -c cookies.txt \
-  -d '{"email":"test@example.com","password":"password123"}'
-
-# Admin login
-curl -X POST http://localhost:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -c admin_cookies.txt \
-  -d '{"email":"admin","password":"admin123"}'
-
-# Get current user
-curl -X GET http://localhost:5000/auth/me \
-  -b cookies.txt
-
-# Get cafes
-curl http://localhost:5000/cafes
-\`\`\`
-
-## 📁 Project Structure
-
-\`\`\`
-backend/
-├── app.py              # Main Flask application
-├── models.py           # SQLAlchemy database models
-├── auth.py             # Authentication routes
-├── reservations.py     # Reservation management routes
-├── cafes.py           # Cafe and availability routes
-├── admin.py           # Admin management routes
-├── utils.py           # Utility functions
-├── requirements.txt   # Python dependencies
-├── run.py            # Application runner
-├── Dockerfile        # Docker configuration
-├── docker-compose.yml # Docker Compose setup
-├── .env.example      # Environment template
-├── .gitignore        # Git ignore rules
-└── README.md         # This file
-\`\`\`
-
-## 🚀 Production Deployment
-
-### 1. Environment Setup
-\`\`\`bash
-# Set production environment variables
-export SECRET_KEY="your-super-secure-secret-key"
-export JWT_SECRET_KEY="your-super-secure-jwt-key"
-export FLASK_ENV="production"
-\`\`\`
-
-### 2. Using Gunicorn
-\`\`\`bash
-# Install Gunicorn
+```bash
 pip install gunicorn
+```
 
-# Run with Gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
-\`\`\`
+#### Step 2: Run with Gunicorn
 
-### 3. Nginx Reverse Proxy (Recommended)
+Gunicorn is a robust WSGI server for running Python web applications in production.
+
+```bash
+# Run the app with 4 worker processes on port 5000
+gunicorn --workers 4 --bind 0.0.0.0:5000 app:app
+```
+
+#### Step 3: Use Nginx as a Reverse Proxy (Recommended)
+
+It's best practice to place your Gunicorn server behind a reverse proxy like Nginx to handle incoming traffic, SSL termination, and serving static files.
+
+Example Nginx configuration:
+
 ```nginx
 server {
     listen 80;
     server_name your-domain.com;
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:5000; # Points to the Gunicorn process
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+```
+
+-----
+
+## 🌐 API Endpoints
+
+### Authentication (Unified)
+
+  - `POST /auth/login` - Login for both users and admins.
+  - `POST /auth/register` - User registration.
+  - `GET /auth/me` - Get current user/admin info.
+  - `POST /auth/logout` - Logout (clears auth cookie).
+
+### Reservations
+
+  - `POST /reservations/temp` - Create temporary reservation (15-min hold).
+  - `POST /reservations` - Create confirmed reservation.
+  - `GET /reservations/my` - Get user's reservations.
+  - `GET /reservations/<number>` - Get reservation details.
+  - `DELETE /reservations/<number>` - Cancel reservation.
+
+### Cafes
+
+  - `GET /cafes` - Get all active cafes.
+  - `GET /cafes/<id>` - Get cafe details.
+  - `GET /cafes/<id>/availability` - Get available time slots.
+  - `GET /cafes/<id>/zones/<zone_id>/tables` - Get tables in a zone.
+
+### Admin (requires admin auth)
+
+  - `GET /admin/dashboard/<cafe_id>` - Get dashboard statistics.
+  - `GET /admin/reservations/<cafe_id>` - Get all cafe reservations.
+  - `PUT /admin/reservations/<id>` - Update reservation status.
+  - `GET /admin/tables/<cafe_id>` - Get cafe table management.
+
+### System
+
+  - `GET /health` - Health check endpoint.
+
+-----
+
+## 🔐 Authentication System
+
+### Unified Login
+
+The system uses a single login endpoint. It automatically detects if the credentials belong to a **user** (by email) or an **admin** (by username or email).
+
+```javascript
+// Example login request
+const response = await fetch('/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include', // Important for sending/receiving cookies
+  body: JSON.stringify({
+    email: 'user@example.com', // or 'admin' for admin username
+    password: 'password123'
+  })
+});
+const data = await response.json();
+// data.type will be 'user' or 'admin'
+```
+
+### Default Admin Account
+
+  - **Username**: `admin`
+  - **Email**: `admin@barsan.cafe`
+  - **Password**: `admin123` (Change this in `.env` for production\!)
+
+-----
+
+## 🗄️ Database Schema
+
+### SQLite WAL Mode Benefits
+
+  - **Concurrent Reads/Writes**: Multiple clients can read the database while one is writing, preventing blocks.
+  - **Better Performance**: Significantly faster write operations.
+  - **ACID Compliance**: Maintains data integrity and reliability.
+
+### Main Models
+
+  - **User**: Customer accounts.
+  - **Admin**: Administrative users.
+  - **Cafe**: Restaurant/bar information.
+  - **Zone**: Seating areas within a cafe.
+  - **Table**: Individual tables.
+  - **Reservation**: Confirmed table reservations.
+  - **TemporaryReservation**: 15-minute reservation holds.
+
+-----
+
+## 🧪 Testing
+
+Use `curl` or any API client to test the endpoints.
+
+```bash
+# Health check
+curl http://localhost:5000/health
+
+# Register a new user
+curl -X POST http://localhost:5000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123","fullName":"Test User","phone":"1234567890"}'
+
+# Login as a user (this saves the auth cookie to cookies.txt)
+curl -X POST http://localhost:5000/auth/login \
+  -H "Content-Type: application/json" -c cookies.txt \
+  -d '{"email":"test@example.com","password":"password123"}'
+
+# Get current user info using the saved cookie
+curl http://localhost:5000/auth/me -b cookies.txt
+```
